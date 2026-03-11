@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register — Jadwal Belajar</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow glow-1"></div>
+<div class="bg-glow glow-2"></div>
+
+<div class="auth-wrap">
+  <div class="auth-card" style="max-width:520px">
+
+    <div class="auth-logo">
+      <div class="auth-logo-title">Jadwal<span>Belajar</span></div>
+      <div class="auth-logo-sub">POST /api/auth/register · JWT Auth</div>
+    </div>
+
+    <div class="auth-heading">Buat Akun Baru</div>
+    <div class="auth-subhead">Isi data diri kamu untuk mendaftar</div>
+
+    <div class="alert alert-err" id="err-msg"></div>
+    <div class="alert alert-ok"  id="ok-msg"></div>
+
+    <div class="form-grid">
+      <div class="inp-wrap">
+        <span class="inp-ico">✏️</span>
+        <input class="form-ctrl" id="name" placeholder="Nama Lengkap *">
+      </div>
+      <div class="inp-wrap">
+        <span class="inp-ico">🎓</span>
+        <input class="form-ctrl" id="nim" placeholder="NIM (opsional)">
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="inp-wrap">
+        <span class="inp-ico">👤</span>
+        <input class="form-ctrl" id="username" placeholder="Username * (min 4 karakter)">
+      </div>
+      <div class="inp-wrap">
+        <span class="inp-ico">🏛️</span>
+        <input class="form-ctrl" id="prodi" placeholder="Program Studi (opsional)">
+      </div>
+    </div>
+
+    <div class="inp-wrap">
+      <span class="inp-ico">✉️</span>
+      <input class="form-ctrl" id="email" type="email" placeholder="Email *">
+    </div>
+
+    <div class="form-grid">
+      <div class="inp-wrap">
+        <span class="inp-ico">🔒</span>
+        <input class="form-ctrl" id="password" type="password" placeholder="Password * (min 6)">
+        <span class="inp-eye" onclick="toggleEye('password', this)">👁</span>
+      </div>
+      <div class="inp-wrap">
+        <span class="inp-ico">🔒</span>
+        <input class="form-ctrl" id="confirm" type="password" placeholder="Konfirmasi Password *"
+               onkeydown="if(event.key==='Enter')register()">
+      </div>
+    </div>
+
+    <button class="btn btn-gradient btn-lg btn-block" id="btn-reg" onclick="register()">
+      Buat Akun →
+    </button>
+
+    <div class="auth-switch">
+      Sudah punya akun? <a href="login.html">Masuk</a>
+    </div>
+
+    <div class="alert alert-info show" style="margin-top:16px;margin-bottom:0">
+      <strong>Endpoint:</strong> POST /api/auth/register<br>
+      Response: <code>{ "token": { "access_token": "..." } }</code>
+    </div>
+
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+  if (Auth.isLogged()) window.location.href = 'dashboard.html';
+
+  async function register() {
+    const name     = document.getElementById('name').value.trim();
+    const nim      = document.getElementById('nim').value.trim();
+    const username = document.getElementById('username').value.trim();
+    const prodi    = document.getElementById('prodi').value.trim();
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirm  = document.getElementById('confirm').value;
+
+    showErr('err-msg', '');
+    showErr('ok-msg',  '');
+
+    if (!name || !username || !email || !password || !confirm) {
+      showErr('err-msg', 'Semua field bertanda * wajib diisi.'); return;
+    }
+    if (username.length < 4) { showErr('err-msg', 'Username minimal 4 karakter.'); return; }
+    if (password.length < 6) { showErr('err-msg', 'Password minimal 6 karakter.'); return; }
+    if (password !== confirm) { showErr('err-msg', 'Konfirmasi password tidak cocok.'); return; }
+
+    btnLoad('btn-reg', true, 'Buat Akun →');
+    const res = await api.public.post('/auth/register', {
+      name, nim, username, prodi, email,
+      password,
+      password_confirmation: confirm,
+    });
+    btnLoad('btn-reg', false, 'Buat Akun →');
+
+    if (!res) { showErr('err-msg', 'Tidak dapat terhubung ke API.'); return; }
+    if (!res.ok) {
+      const errs = res.data.errors
+        ? Object.values(res.data.errors).flat().join(' ')
+        : res.data.message;
+      showErr('err-msg', errs); return;
+    }
+
+    Auth.setToken(res.data.token.access_token);
+    Auth.setUser(res.data.user);
+
+    const okEl = document.getElementById('ok-msg');
+    okEl.textContent = 'Akun berhasil dibuat! Mengarahkan ke dashboard...';
+    okEl.classList.add('show');
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+  }
+</script>
+</body>
+</html>

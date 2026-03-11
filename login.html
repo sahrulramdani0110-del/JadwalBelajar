@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Jadwal Belajar</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow glow-1"></div>
+<div class="bg-glow glow-2"></div>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+
+    <div class="auth-logo">
+      <div class="auth-logo-title">Jadwal<span>Belajar</span></div>
+      <div class="auth-logo-sub">POST /api/auth/login · JWT Auth</div>
+    </div>
+
+    <div class="auth-heading">Masuk ke Akun</div>
+    <div class="auth-subhead">Gunakan email dan password yang terdaftar</div>
+
+    <div class="alert alert-err" id="err-msg"></div>
+
+    <div class="inp-wrap">
+      <span class="inp-ico">✉️</span>
+      <input class="form-ctrl" id="email" type="email" placeholder="Email"
+             onkeydown="if(event.key==='Enter')login()">
+    </div>
+
+    <div class="inp-wrap">
+      <span class="inp-ico">🔒</span>
+      <input class="form-ctrl" id="password" type="password" placeholder="Password"
+             onkeydown="if(event.key==='Enter')login()">
+      <span class="inp-eye" onclick="toggleEye('password', this)">👁</span>
+    </div>
+
+    <button class="btn btn-gradient btn-lg btn-block" id="btn-login" onclick="login()">
+      Masuk ke Dashboard →
+    </button>
+
+    <div class="auth-switch">
+      Belum punya akun? <a href="register.html">Daftar sekarang</a>
+    </div>
+
+    <!-- API status -->
+    <div style="text-align:center;margin-top:20px">
+      <span class="api-pill wait" id="api-pill">
+        <span class="api-dot"></span> Mengecek API...
+      </span>
+      <div style="margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--text3)" id="api-url"></div>
+    </div>
+
+    <!-- Demo hint -->
+    <div class="alert alert-info show" style="margin-top:16px;margin-bottom:0">
+      <strong>Endpoint:</strong> POST /api/auth/login<br>
+      Body: <code>{ "email": "...", "password": "..." }</code><br>
+      Response: <code>{ "token": { "access_token": "..." } }</code>
+    </div>
+
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+  // Redirect jika sudah login
+  if (Auth.isLogged()) window.location.href = 'dashboard.html';
+
+  // Tampilkan URL API
+  document.getElementById('api-url').textContent = BASE_URL;
+  checkApi('api-pill');
+
+  async function login() {
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    showErr('err-msg', '');
+    if (!email || !password) { showErr('err-msg', 'Email dan password wajib diisi.'); return; }
+
+    btnLoad('btn-login', true, 'Masuk ke Dashboard →');
+    const res = await api.public.post('/auth/login', { email, password });
+    btnLoad('btn-login', false, 'Masuk ke Dashboard →');
+
+    if (!res)       { showErr('err-msg', 'Tidak dapat terhubung ke API.'); return; }
+    if (!res.ok)    { showErr('err-msg', res.data.message || 'Login gagal.'); return; }
+
+    Auth.setToken(res.data.token.access_token);
+    Auth.setUser(res.data.user);
+
+    toast('Login berhasil! Mengarahkan...', 'ok');
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 700);
+  }
+</script>
+</body>
+</html>

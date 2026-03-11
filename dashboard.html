@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Jadwal Belajar</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow glow-1"></div>
+<div class="bg-glow glow-2"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-title">Jadwal<span>Belajar</span></div>
+      <div class="logo-user" id="sidebar-user">—</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Menu</div>
+      <a class="nav-item active" href="dashboard.html"><span class="nav-icon">⊞</span> Dashboard</a>
+      <a class="nav-item" href="jadwal.html"><span class="nav-icon">📋</span> Jadwal</a>
+      <a class="nav-item" href="tugas.html">
+        <span class="nav-icon">📝</span> Tugas
+        <span class="nav-badge" id="badge-tugas" style="display:none">0</span>
+      </a>
+      <div class="nav-label">Akun</div>
+      <div class="nav-item danger" onclick="doLogout()"><span class="nav-icon">🚪</span> Keluar</div>
+    </nav>
+    <div class="sidebar-footer">
+      <span id="sidebar-url"></span><br>
+      Bearer JWT · auth:api guard
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-info">
+        <div class="tb-title">Dashboard</div>
+        <div class="tb-sub">GET /api/jadwal &amp; GET /api/tugas</div>
+      </div>
+      <div class="topbar-right">
+        <a class="btn btn-ghost btn-sm" href="jadwal.html">+ Jadwal</a>
+        <a class="btn btn-primary btn-sm" href="tugas.html">+ Tugas</a>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-lbl">Total Jadwal</div>
+          <div class="stat-val c-a" id="s-jadwal"><span class="spinner"></span></div>
+          <div class="stat-sub">dari API</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Tugas Aktif</div>
+          <div class="stat-val c-r" id="s-aktif"><span class="spinner"></span></div>
+          <div class="stat-sub">belum & sedang</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Tugas Selesai</div>
+          <div class="stat-val c-g" id="s-selesai"><span class="spinner"></span></div>
+          <div class="stat-sub">sudah dikerjakan</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Progress</div>
+          <div class="stat-val c-p" id="s-progress"><span class="spinner"></span></div>
+          <div class="stat-sub">completion rate</div>
+          <div class="prog-track" style="margin-top:10px">
+            <div class="prog-fill" id="prog-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tables -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="table-wrap">
+          <div class="table-head">
+            <span class="table-title">📋 Jadwal Terbaru</span>
+            <a class="btn btn-ghost btn-sm" href="jadwal.html">Lihat Semua →</a>
+          </div>
+          <table>
+            <thead><tr><th>Mapel</th><th>Hari</th><th>Jam</th></tr></thead>
+            <tbody id="d-jadwal"></tbody>
+          </table>
+        </div>
+        <div class="table-wrap">
+          <div class="table-head">
+            <span class="table-title">📝 Tugas Mendatang</span>
+            <a class="btn btn-ghost btn-sm" href="tugas.html">Lihat Semua →</a>
+          </div>
+          <table>
+            <thead><tr><th>Judul</th><th>Deadline</th><th>Status</th></tr></thead>
+            <tbody id="d-tugas"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+  if (!requireAuth()) throw '';
+  renderSidebar();
+
+  async function loadDashboard() {
+    const [resJ, resT] = await Promise.all([
+      api.get('/jadwal'),
+      api.get('/tugas'),
+    ]);
+
+    const jadwals = resJ?.ok ? (resJ.data.data || []) : [];
+    const tugass  = resT?.ok ? (resT.data.data || []) : [];
+    const summary = resT?.ok ? resT.data.summary : {};
+
+    const aktif   = (summary.belum || 0) + (summary.sedang || 0);
+    const selesai = summary.selesai || 0;
+    const pct     = summary.progress || 0;
+
+    document.getElementById('s-jadwal').textContent  = jadwals.length;
+    document.getElementById('s-aktif').textContent   = aktif;
+    document.getElementById('s-selesai').textContent = selesai;
+    document.getElementById('s-progress').textContent= pct + '%';
+    document.getElementById('prog-fill').style.width = pct + '%';
+
+    // Badge
+    const badge = document.getElementById('badge-tugas');
+    badge.textContent    = aktif;
+    badge.style.display  = aktif > 0 ? 'inline-block' : 'none';
+
+    // Jadwal table
+    const jTb = document.getElementById('d-jadwal');
+    jTb.innerHTML = jadwals.slice(0,5).map(j => `
+      <tr>
+        <td style="font-weight:600;color:var(--text)">${j.mapel}</td>
+        <td><span class="badge b-${j.hari.toLowerCase()}">${j.hari}</span></td>
+        <td style="font-family:var(--mono);font-size:11px">${j.jam_mulai} – ${j.jam_selesai}</td>
+      </tr>`).join('') || '<tr><td colspan="3"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Belum ada jadwal</div></div></td></tr>';
+
+    // Tugas table
+    const upcoming = tugass.filter(t => t.status !== 'selesai').slice(0,5);
+    const tTb = document.getElementById('d-tugas');
+    tTb.innerHTML = upcoming.map(t => `
+      <tr>
+        <td style="font-weight:600;color:var(--text)">${t.judul}</td>
+        <td>${deadlineLabel(t.deadline)}</td>
+        <td><span class="badge b-${t.status}">${t.status}</span></td>
+      </tr>`).join('') || '<tr><td colspan="3"><div class="empty"><div class="empty-icon">✅</div><div class="empty-text">Semua tugas selesai!</div></div></td></tr>';
+  }
+
+  loadDashboard();
+</script>
+</body>
+</html>

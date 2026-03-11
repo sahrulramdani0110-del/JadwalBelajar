@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jadwal — Jadwal Belajar</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow glow-1"></div>
+<div class="bg-glow glow-2"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-title">Jadwal<span>Belajar</span></div>
+      <div class="logo-user" id="sidebar-user">—</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Menu</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">⊞</span> Dashboard</a>
+      <a class="nav-item active" href="jadwal.html"><span class="nav-icon">📋</span> Jadwal</a>
+      <a class="nav-item" href="tugas.html"><span class="nav-icon">📝</span> Tugas</a>
+      <div class="nav-label">Akun</div>
+      <div class="nav-item danger" onclick="doLogout()"><span class="nav-icon">🚪</span> Keluar</div>
+    </nav>
+    <div class="sidebar-footer"><span id="sidebar-url"></span><br>Bearer JWT · auth:api</div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-info">
+        <div class="tb-title">Data Jadwal</div>
+        <div class="tb-sub">GET · POST · PUT · DELETE /api/jadwal</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" onclick="openForm()">+ Tambah Jadwal</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="table-wrap">
+        <div class="table-head">
+          <span class="table-title">Daftar Jadwal <span id="count-lbl" style="font-size:11px;font-family:var(--mono);color:var(--text3)"></span></span>
+          <div class="table-tools">
+            <select id="filter-hari" onchange="loadJadwal()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text2);font-size:12px;font-family:var(--sans);outline:none;cursor:pointer">
+              <option value="">Semua Hari</option>
+              <option>Senin</option><option>Selasa</option><option>Rabu</option>
+              <option>Kamis</option><option>Jumat</option><option>Sabtu</option><option>Minggu</option>
+            </select>
+            <div class="search-box">
+              <span style="color:var(--text3)">🔍</span>
+              <input id="search" placeholder="Cari mapel..." oninput="doSearch()">
+            </div>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Mata Pelajaran</th>
+              <th>Pengajar</th>
+              <th>Hari</th>
+              <th>Jam</th>
+              <th>Ruangan</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="jadwal-tbody">
+            <tr><td colspan="8"><div class="empty"><div class="spinner" style="width:24px;height:24px;margin:0 auto"></div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FORM JADWAL -->
+<div class="overlay" id="modal-jadwal">
+  <div class="modal">
+    <div class="modal-hd">
+      <span class="modal-title" id="modal-title">Tambah Jadwal Baru</span>
+      <button class="modal-x" onclick="closeModal('modal-jadwal')">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="alert alert-err" id="form-err"></div>
+      <div class="form-grid">
+        <div class="form-grp">
+          <label class="form-lbl">Mata Pelajaran *</label>
+          <input class="form-ctrl" id="f-mapel" placeholder="cth: Pemrograman Web">
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Pengajar</label>
+          <input class="form-ctrl" id="f-pengajar" placeholder="cth: Ir. Alam R.">
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Hari *</label>
+          <select class="form-ctrl" id="f-hari">
+            <option value="">-- Pilih Hari --</option>
+            <option>Senin</option><option>Selasa</option><option>Rabu</option>
+            <option>Kamis</option><option>Jumat</option><option>Sabtu</option><option>Minggu</option>
+          </select>
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Ruangan</label>
+          <input class="form-ctrl" id="f-ruangan" placeholder="cth: Lab Komputer A">
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Jam Mulai *</label>
+          <input class="form-ctrl" type="time" id="f-mulai" value="08:00">
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Jam Selesai *</label>
+          <input class="form-ctrl" type="time" id="f-selesai" value="10:00">
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Status</label>
+          <select class="form-ctrl" id="f-status">
+            <option value="aktif">Aktif</option>
+            <option value="selesai">Selesai</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Catatan</label>
+          <input class="form-ctrl" id="f-catatan" placeholder="opsional">
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('modal-jadwal')">Batal</button>
+      <button class="btn btn-primary" id="btn-save" onclick="saveJadwal()">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+  if (!requireAuth()) throw '';
+  renderSidebar();
+
+  let jadwals   = [];
+  let editId    = null;
+
+  // ── Load ───────────────────────────────────────
+  async function loadJadwal() {
+    const hari = document.getElementById('filter-hari').value;
+    const ep   = hari ? `/jadwal?hari=${hari}` : '/jadwal';
+    const res  = await api.get(ep);
+
+    if (!res?.ok) { toast('Gagal memuat data jadwal: ' + (res?.data?.message || 'Error'), 'err'); return; }
+
+    jadwals = res.data.data || [];
+    document.getElementById('count-lbl').textContent = `(${jadwals.length})`;
+    renderTable(jadwals);
+  }
+
+  function renderTable(list) {
+    const tb = document.getElementById('jadwal-tbody');
+    if (!list.length) {
+      tb.innerHTML = `<tr><td colspan="8"><div class="empty">
+        <div class="empty-icon">📭</div>
+        <div class="empty-text">Belum ada jadwal. Klik "+ Tambah Jadwal" untuk mulai.</div>
+      </div></td></tr>`;
+      return;
+    }
+    tb.innerHTML = list.map((j, i) => `
+      <tr>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">${String(i+1).padStart(2,'0')}</td>
+        <td style="font-weight:600;color:var(--text)">${j.mapel}</td>
+        <td style="color:var(--text3)">${j.pengajar || '—'}</td>
+        <td><span class="badge b-${j.hari.toLowerCase()}">${j.hari}</span></td>
+        <td style="font-family:var(--mono);font-size:11px">${j.jam_mulai} – ${j.jam_selesai}</td>
+        <td style="color:var(--text3)">${j.ruangan || '—'}</td>
+        <td><span class="badge b-${j.status}">
+          <span class="dot ${j.status==='aktif'?'dot-g':j.status==='pending'?'dot-y':'dot-x'}"></span>${j.status}
+        </span></td>
+        <td><div class="actions">
+          <button class="btn btn-success btn-sm" onclick="openForm(${j.id})">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm"  onclick="deleteJadwal(${j.id})">🗑 Hapus</button>
+        </div></td>
+      </tr>`).join('');
+  }
+
+  function doSearch() {
+    const q = document.getElementById('search').value.toLowerCase();
+    renderTable(jadwals.filter(j =>
+      j.mapel.toLowerCase().includes(q) ||
+      (j.pengajar||'').toLowerCase().includes(q) ||
+      j.hari.toLowerCase().includes(q)
+    ));
+  }
+
+  // ── Form ───────────────────────────────────────
+  function openForm(id = null) {
+    editId = id;
+    showErr('form-err', '');
+    document.getElementById('modal-title').textContent = id ? 'Edit Jadwal' : 'Tambah Jadwal Baru';
+
+    if (id) {
+      const j = jadwals.find(x => x.id === id);
+      document.getElementById('f-mapel').value   = j.mapel;
+      document.getElementById('f-pengajar').value= j.pengajar || '';
+      document.getElementById('f-hari').value    = j.hari;
+      document.getElementById('f-ruangan').value = j.ruangan || '';
+      document.getElementById('f-mulai').value   = j.jam_mulai;
+      document.getElementById('f-selesai').value = j.jam_selesai;
+      document.getElementById('f-status').value  = j.status;
+      document.getElementById('f-catatan').value = j.catatan || '';
+    } else {
+      ['f-mapel','f-pengajar','f-ruangan','f-catatan'].forEach(f => document.getElementById(f).value = '');
+      document.getElementById('f-hari').value   = '';
+      document.getElementById('f-mulai').value  = '08:00';
+      document.getElementById('f-selesai').value= '10:00';
+      document.getElementById('f-status').value = 'aktif';
+    }
+    openModal('modal-jadwal');
+  }
+
+  async function saveJadwal() {
+    showErr('form-err', '');
+    const mapel  = document.getElementById('f-mapel').value.trim();
+    const hari   = document.getElementById('f-hari').value;
+    const mulai  = document.getElementById('f-mulai').value;
+    const selesai= document.getElementById('f-selesai').value;
+    if (!mapel || !hari || !mulai || !selesai) { showErr('form-err', 'Isi semua field wajib (*).'); return; }
+
+    const body = {
+      mapel, hari, jam_mulai: mulai, jam_selesai: selesai,
+      pengajar: document.getElementById('f-pengajar').value.trim(),
+      ruangan:  document.getElementById('f-ruangan').value.trim(),
+      status:   document.getElementById('f-status').value,
+      catatan:  document.getElementById('f-catatan').value.trim(),
+    };
+
+    btnLoad('btn-save', true, '💾 Simpan');
+    const res = editId
+      ? await api.put(`/jadwal/${editId}`, body)
+      : await api.post('/jadwal', body);
+    btnLoad('btn-save', false, '💾 Simpan');
+
+    if (!res?.ok) {
+      const msg = res?.data?.errors
+        ? Object.values(res.data.errors).flat().join(', ')
+        : (res?.data?.message || 'Gagal menyimpan');
+      showErr('form-err', msg); return;
+    }
+
+    toast(editId ? 'Jadwal berhasil diperbarui ✓' : 'Jadwal berhasil ditambahkan ✓', 'ok');
+    closeModal('modal-jadwal');
+    loadJadwal();
+  }
+
+  async function deleteJadwal(id) {
+    if (!confirm('Hapus jadwal ini? Tindakan tidak bisa dibatalkan.')) return;
+    const res = await api.delete(`/jadwal/${id}`);
+    if (res?.ok) { toast('Jadwal dihapus', 'inf'); loadJadwal(); }
+    else toast('Gagal menghapus: ' + (res?.data?.message || 'Error'), 'err');
+  }
+
+  loadJadwal();
+</script>
+</body>
+</html>

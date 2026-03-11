@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tugas — Jadwal Belajar</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow glow-1"></div>
+<div class="bg-glow glow-2"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-title">Jadwal<span>Belajar</span></div>
+      <div class="logo-user" id="sidebar-user">—</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Menu</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">⊞</span> Dashboard</a>
+      <a class="nav-item" href="jadwal.html"><span class="nav-icon">📋</span> Jadwal</a>
+      <a class="nav-item active" href="tugas.html">
+        <span class="nav-icon">📝</span> Tugas
+        <span class="nav-badge" id="badge-tugas" style="display:none">0</span>
+      </a>
+      <div class="nav-label">Akun</div>
+      <div class="nav-item danger" onclick="doLogout()"><span class="nav-icon">🚪</span> Keluar</div>
+    </nav>
+    <div class="sidebar-footer"><span id="sidebar-url"></span><br>Bearer JWT · auth:api</div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-info">
+        <div class="tb-title">Manajemen Tugas</div>
+        <div class="tb-sub">GET · POST · PUT · DELETE /api/tugas</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" onclick="openForm()">+ Tambah Tugas</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Progress Summary -->
+      <div class="card" id="summary-card" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:700">Progress Tugas</span>
+          <span style="font-family:var(--mono);font-size:13px;color:var(--accent)" id="pct-lbl">0%</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+        <div style="display:flex;gap:20px;margin-top:10px" id="summary-pills"></div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <div class="table-head">
+          <span class="table-title">Daftar Tugas <span id="count-lbl" style="font-size:11px;font-family:var(--mono);color:var(--text3)"></span></span>
+          <div class="table-tools">
+            <select id="filter-status" onchange="loadTugas()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text2);font-size:12px;font-family:var(--sans);outline:none;cursor:pointer">
+              <option value="">Semua</option>
+              <option value="belum">Belum</option>
+              <option value="sedang">Sedang</option>
+              <option value="selesai">Selesai</option>
+            </select>
+            <select id="filter-prioritas" onchange="loadTugas()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text2);font-size:12px;font-family:var(--sans);outline:none;cursor:pointer">
+              <option value="">Semua Prioritas</option>
+              <option value="tinggi">Tinggi</option>
+              <option value="sedang">Sedang</option>
+              <option value="rendah">Rendah</option>
+            </select>
+            <div class="search-box">
+              <span style="color:var(--text3)">🔍</span>
+              <input id="search" placeholder="Cari tugas..." oninput="doSearch()">
+            </div>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Judul Tugas</th>
+              <th>Mapel</th>
+              <th>Deadline</th>
+              <th>Prioritas</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tugas-tbody">
+            <tr><td colspan="7"><div class="empty"><div class="spinner" style="width:24px;height:24px;margin:0 auto"></div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FORM TUGAS -->
+<div class="overlay" id="modal-tugas">
+  <div class="modal">
+    <div class="modal-hd">
+      <span class="modal-title" id="modal-title">Tambah Tugas Baru</span>
+      <button class="modal-x" onclick="closeModal('modal-tugas')">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="alert alert-err" id="form-err"></div>
+      <div class="form-grp">
+        <label class="form-lbl">Judul Tugas *</label>
+        <input class="form-ctrl" id="f-judul" placeholder="cth: Praktikum 5 — Laravel CRUD">
+      </div>
+      <div class="form-grid">
+        <div class="form-grp">
+          <label class="form-lbl">Mata Pelajaran *</label>
+          <input class="form-ctrl" id="f-mapel" placeholder="cth: Pemrograman Web">
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Deadline *</label>
+          <input class="form-ctrl" type="date" id="f-deadline">
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Prioritas *</label>
+          <select class="form-ctrl" id="f-prioritas">
+            <option value="rendah">🟢 Rendah</option>
+            <option value="sedang" selected>🟡 Sedang</option>
+            <option value="tinggi">🔴 Tinggi</option>
+          </select>
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Status</label>
+          <select class="form-ctrl" id="f-status">
+            <option value="belum">Belum Dikerjakan</option>
+            <option value="sedang">Sedang Dikerjakan</option>
+            <option value="selesai">Sudah Selesai</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grp">
+        <label class="form-lbl">Deskripsi</label>
+        <textarea class="form-ctrl" id="f-desc" placeholder="Detail tugas, catatan penting, referensi..."></textarea>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('modal-tugas')">Batal</button>
+      <button class="btn btn-primary" id="btn-save" onclick="saveTugas()">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+  if (!requireAuth()) throw '';
+  renderSidebar();
+
+  let tugass = [];
+  let editId = null;
+
+  // ── Load ───────────────────────────────────────
+  async function loadTugas() {
+    const status   = document.getElementById('filter-status').value;
+    const prioritas= document.getElementById('filter-prioritas').value;
+    let ep = '/tugas';
+    const params = [];
+    if (status)    params.push(`status=${status}`);
+    if (prioritas) params.push(`prioritas=${prioritas}`);
+    if (params.length) ep += '?' + params.join('&');
+
+    const res = await api.get(ep);
+    if (!res?.ok) { toast('Gagal memuat tugas', 'err'); return; }
+
+    tugass = res.data.data || [];
+    const summary = res.data.summary || {};
+    document.getElementById('count-lbl').textContent = `(${tugass.length})`;
+
+    renderTable(tugass);
+    renderSummary(summary);
+
+    // Badge sidebar
+    const aktif = (summary.belum||0) + (summary.sedang||0);
+    const badge = document.getElementById('badge-tugas');
+    badge.textContent   = aktif;
+    badge.style.display = aktif > 0 ? 'inline-block' : 'none';
+  }
+
+  function renderTable(list) {
+    const tb = document.getElementById('tugas-tbody');
+    if (!list.length) {
+      tb.innerHTML = `<tr><td colspan="7"><div class="empty">
+        <div class="empty-icon">✅</div>
+        <div class="empty-text">Tidak ada tugas ditemukan.</div>
+      </div></td></tr>`;
+      return;
+    }
+    tb.innerHTML = list.map((t, i) => `
+      <tr style="${t.status==='selesai'?'opacity:.55':''}">
+        <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">${String(i+1).padStart(2,'0')}</td>
+        <td style="font-weight:600;color:var(--text);${t.status==='selesai'?'text-decoration:line-through':''}">${t.judul}</td>
+        <td><span class="badge b-sedang" style="background:rgba(129,140,248,.12);color:var(--accent2)">${t.mapel}</span></td>
+        <td>${deadlineLabel(t.deadline)}</td>
+        <td><span class="badge b-${t.prioritas}">${t.prioritas}</span></td>
+        <td>
+          <span class="badge b-${t.status}">
+            <span class="dot ${t.status==='selesai'?'dot-g':t.status==='sedang'?'dot-y':'dot-r'}"></span>${t.status}
+          </span>
+        </td>
+        <td><div class="actions">
+          <button class="btn btn-success btn-sm" onclick="openForm(${t.id})">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm"  onclick="deleteTugas(${t.id})">🗑</button>
+        </div></td>
+      </tr>`).join('');
+  }
+
+  function renderSummary(s) {
+    if (!s) return;
+    document.getElementById('summary-card').style.display = 'block';
+    const pct = s.progress || 0;
+    document.getElementById('pct-lbl').textContent   = pct + '%';
+    document.getElementById('prog-fill').style.width = pct + '%';
+    document.getElementById('summary-pills').innerHTML = [
+      { l: 'Belum',   v: s.belum||0,   c: 'var(--red)'    },
+      { l: 'Sedang',  v: s.sedang||0,  c: 'var(--yellow)' },
+      { l: 'Selesai', v: s.selesai||0, c: 'var(--green)'  },
+    ].map(x => `<span style="font-size:12px;color:${x.c};font-family:var(--mono)">● ${x.l}: <strong>${x.v}</strong></span>`).join('');
+  }
+
+  function doSearch() {
+    const q = document.getElementById('search').value.toLowerCase();
+    renderTable(tugass.filter(t =>
+      t.judul.toLowerCase().includes(q) ||
+      t.mapel.toLowerCase().includes(q)
+    ));
+  }
+
+  // ── Form ───────────────────────────────────────
+  function openForm(id = null) {
+    editId = id;
+    showErr('form-err', '');
+    document.getElementById('modal-title').textContent = id ? 'Edit Tugas' : 'Tambah Tugas Baru';
+
+    if (id) {
+      const t = tugass.find(x => x.id === id);
+      document.getElementById('f-judul').value    = t.judul;
+      document.getElementById('f-mapel').value    = t.mapel;
+      document.getElementById('f-deadline').value = t.deadline;
+      document.getElementById('f-prioritas').value= t.prioritas;
+      document.getElementById('f-status').value   = t.status;
+      document.getElementById('f-desc').value     = t.deskripsi || '';
+    } else {
+      ['f-judul','f-mapel','f-desc'].forEach(f => document.getElementById(f).value = '');
+      document.getElementById('f-deadline').value  = new Date().toISOString().split('T')[0];
+      document.getElementById('f-prioritas').value = 'sedang';
+      document.getElementById('f-status').value    = 'belum';
+    }
+    openModal('modal-tugas');
+  }
+
+  async function saveTugas() {
+    showErr('form-err', '');
+    const judul    = document.getElementById('f-judul').value.trim();
+    const mapel    = document.getElementById('f-mapel').value.trim();
+    const deadline = document.getElementById('f-deadline').value;
+    if (!judul || !mapel || !deadline) { showErr('form-err', 'Isi semua field wajib (*).'); return; }
+
+    const body = {
+      judul, mapel, deadline,
+      prioritas: document.getElementById('f-prioritas').value,
+      status:    document.getElementById('f-status').value,
+      deskripsi: document.getElementById('f-desc').value.trim(),
+    };
+
+    btnLoad('btn-save', true, '💾 Simpan');
+    const res = editId
+      ? await api.put(`/tugas/${editId}`, body)
+      : await api.post('/tugas', body);
+    btnLoad('btn-save', false, '💾 Simpan');
+
+    if (!res?.ok) {
+      const msg = res?.data?.errors
+        ? Object.values(res.data.errors).flat().join(', ')
+        : (res?.data?.message || 'Gagal menyimpan');
+      showErr('form-err', msg); return;
+    }
+
+    toast(editId ? 'Tugas berhasil diperbarui ✓' : 'Tugas berhasil ditambahkan ✓', 'ok');
+    closeModal('modal-tugas');
+    loadTugas();
+  }
+
+  async function deleteTugas(id) {
+    if (!confirm('Hapus tugas ini? Tindakan tidak bisa dibatalkan.')) return;
+    const res = await api.delete(`/tugas/${id}`);
+    if (res?.ok) { toast('Tugas dihapus', 'inf'); loadTugas(); }
+    else toast('Gagal menghapus: ' + (res?.data?.message || 'Error'), 'err');
+  }
+
+  loadTugas();
+</script>
+</body>
+</html>
